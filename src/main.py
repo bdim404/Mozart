@@ -203,10 +203,10 @@ def recognize(out_file, most_common, coord_imgs, imgs_with_staff, imgs_spacing, 
 
 
 def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_with_staff, imgs_spacing, imgs_rows):
-    note_types = ['4', '8', '8_b_n', '8_b_r', '16', '16_b_n', '16_b_r',
-                  '32', '32_b_n', '32_b_r', 'a_4', 'a_8', 'a_16', 'a_32',
-                  '2', 'a_2', '1', 'a_1', 'chord']
-
+    black_names = ['4', '8', '8_b_n', '8_b_r', '16', '16_b_n', '16_b_r',
+                   '32', '32_b_n', '32_b_r', 'a_4', 'a_8', 'a_16', 'a_32', 'chord']
+    ring_names = ['2', 'a_2']
+    whole_names = ['1', 'a_1']
     disk_size = most_common / 4
 
     if original_img.ndim == 2:
@@ -235,11 +235,44 @@ def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_
             labels = predict(saved_img)
             label = labels[0]
 
-            if label not in note_types:
+            pitch_labels = []
+
+            if label in black_names:
+                test_img = np.copy(prim_with_staff[j])
+                test_img = binary_dilation(test_img, disk(disk_size))
+                comps, comp_w_staff, bounds = get_connected_components(
+                    test_img, prim_with_staff[j])
+                comps, comp_w_staff, bounds = filter_beams(
+                    comps, comp_w_staff, bounds)
+                bounds = [np.array(bound)+disk_size-2 for bound in bounds]
+
+                for bbox in bounds:
+                    c = bbox[2]+boundary[j][0]
+                    line_idx, p = estim(int(c), i, imgs_spacing, imgs_rows)
+                    pitch = label_map[line_idx][p]
+                    pitch_labels.append(pitch)
+
+            elif label in ring_names:
+                head_img = 1-binary_fill_holes(1-prim)
+                head_img = binary_closing(head_img, disk(disk_size))
+                comps, comp_w_staff, bounds = get_connected_components(
+                    head_img, prim_with_staff[j])
+                for bbox in bounds:
+                    c = bbox[2]+boundary[j][0]
+                    line_idx, p = estim(int(c), i, imgs_spacing, imgs_rows)
+                    pitch = label_map[line_idx][p]
+                    pitch_labels.append(pitch)
+
+            elif label in whole_names:
+                c = boundary[j][2]
+                line_idx, p = estim(int(c), i, imgs_spacing, imgs_rows)
+                pitch = label_map[line_idx][p]
+                pitch_labels.append(pitch)
+
+            if len(pitch_labels) == 0:
                 continue
 
             minr, minc, maxr, maxc = boundary[j]
-
             global_minr = int(minr + y_offset)
             global_maxr = int(maxr + y_offset)
             global_minc = int(minc)
@@ -247,7 +280,9 @@ def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_
 
             cv2.rectangle(img_rgb, (global_minc, global_minr),
                          (global_maxc, global_maxr), (255, 0, 0), 2)
-            cv2.putText(img_rgb, str(label), (global_minc, max(global_minr - 5, 10)),
+
+            pitch_text = ','.join(pitch_labels) if len(pitch_labels) > 1 else pitch_labels[0]
+            cv2.putText(img_rgb, pitch_text, (global_minc, max(global_minr - 5, 10)),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
     return img_rgb
