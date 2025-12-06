@@ -42,6 +42,8 @@ def gray_img(img):
     img: rgb image
     return: gray image, pixel values 0:255
     '''
+    if len(img.shape) == 3 and img.shape[2] == 4:
+        img = img[:, :, :3]
     gray = rgb2gray(img)
     if len(img.shape) == 3:
         gray = gray*255
@@ -60,6 +62,10 @@ def otsu(img):
 
 
 def get_gray(img):
+    if len(img.shape) == 2:
+        return img
+    if len(img.shape) == 3 and img.shape[2] == 4:
+        img = img[:, :, :3]
     gray = rgb2gray(np.copy(img))
     return gray
 

@@ -202,18 +202,77 @@ def recognize(out_file, most_common, coord_imgs, imgs_with_staff, imgs_spacing, 
     print("###########################", res, "##########################")
 
 
-def main(input_path, output_path):
-    imgs_path = sorted(glob(f'{input_path}/*'))
+def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_with_staff, imgs_spacing, imgs_rows):
+    disk_size = most_common / 4
+
+    if original_img.ndim == 2:
+        img_rgb = cv2.cvtColor(original_img.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+    else:
+        if original_img.dtype == np.float64 or original_img.dtype == np.float32:
+            img_rgb = (original_img * 255).astype(np.uint8)
+        else:
+            img_rgb = original_img.astype(np.uint8)
+
+    if img_rgb.shape[2] == 4:
+        img_rgb = cv2.cvtColor(img_rgb, cv2.COLOR_RGBA2RGB)
+
+    img_rgb = np.ascontiguousarray(img_rgb)
+
+    for i, img in enumerate(coord_imgs):
+        y_offset = segmentation_offsets[i][0] if i < len(segmentation_offsets) else 0
+
+        primitives, prim_with_staff, boundary = get_connected_components(
+            img, imgs_with_staff[i])
+
+        for j, prim in enumerate(primitives):
+            prim = binary_opening(prim, square(
+                np.abs(most_common - imgs_spacing[i])))
+            saved_img = (255 * (1 - prim)).astype(np.uint8)
+            labels = predict(saved_img)
+            label = labels[0]
+
+            minr, minc, maxr, maxc = boundary[j]
+
+            global_minr = int(minr + y_offset)
+            global_maxr = int(maxr + y_offset)
+            global_minc = int(minc)
+            global_maxc = int(maxc)
+
+            cv2.rectangle(img_rgb, (global_minc, global_minr),
+                         (global_maxc, global_maxr), (255, 0, 0), 2)
+            cv2.putText(img_rgb, str(label), (global_minc, max(global_minr - 5, 10)),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+
+    return img_rgb
+
+
+def main(input_path, output_path=None, mode='text'):
+    import os
+
+    if mode == 'text' and output_path is None:
+        raise ValueError("output_path required for text mode")
+
+    if os.path.isfile(input_path):
+        imgs_path = [input_path]
+    else:
+        imgs_path = sorted(glob(f'{input_path}/*'))
+
+    results = []
     for img_path in imgs_path:
         img_name = img_path.split('/')[-1].split('.')[0]
-        out_file = open(f'{output_path}/{img_name}.txt', "w")
+
+        if mode in ['text', 'both']:
+            out_file = open(f'{output_path}/{img_name}.txt', "w")
+
         print(f"Processing new image {img_name}...")
         img = io.imread(img_path)
+        original_rgb = img.copy()
         img = gray_img(img)
         horizontal = IsHorizontal(img)
         if horizontal == False:
             theta = deskew(img)
             img = rotation(img, theta)
+            original_rgb = rotation(original_rgb, theta)
             img = get_gray(img)
             img = get_thresholded(img, threshold_otsu(img))
             img = get_closer(img)
@@ -226,8 +285,7 @@ def main(input_path, output_path):
         segmenter = Segmenter(bin_img)
         imgs_with_staff = segmenter.regions_with_staff
         most_common = segmenter.most_common
-
-        # imgs_without_staff = segmenter.regions_without_staff
+        segmentation_offsets = getattr(segmenter, 'segmentation_offsets', [])
 
         imgs_spacing = []
         imgs_rows = []
@@ -238,18 +296,35 @@ def main(input_path, output_path):
             imgs_spacing.append(spacing)
             coord_imgs.append(no_staff_img)
 
-        print("Recognize...")
-        recognize(out_file, most_common, coord_imgs,
-                  imgs_with_staff, imgs_spacing, imgs_rows)
-        out_file.close()
+        if mode in ['text', 'both']:
+            print("Recognize...")
+            recognize(out_file, most_common, coord_imgs,
+                     imgs_with_staff, imgs_spacing, imgs_rows)
+            out_file.close()
+
+        if mode in ['image', 'both']:
+            print("Visualizing...")
+            annotated_img = visualize(original_rgb, segmentation_offsets, most_common,
+                                     coord_imgs, imgs_with_staff, imgs_spacing, imgs_rows)
+            if output_path:
+                cv2.imwrite(f'{output_path}/{img_name}_annotated.png',
+                           cv2.cvtColor(annotated_img, cv2.COLOR_RGB2BGR))
+            results.append(annotated_img)
+
         print("Done...")
+
+    if mode == 'image' and output_path is None:
+        return results[0] if len(results) == 1 else results
+
+    return None
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-
-    parser.add_argument("inputfolder", help="Input File")
-    parser.add_argument("outputfolder", help="Output File")
+    parser.add_argument("inputfolder", help="Input file or folder path")
+    parser.add_argument("outputfolder", nargs='?', default=None, help="Output folder path")
+    parser.add_argument("--mode", choices=['text', 'image', 'both'],
+                       default='text', help="Output mode: text, image, or both")
 
     args = parser.parse_args()
-    main(args.inputfolder, args.outputfolder)
+    main(args.inputfolder, args.outputfolder, args.mode)

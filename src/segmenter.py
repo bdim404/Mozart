@@ -77,3 +77,4 @@ class Segmenter(object):
 
         self.regions_without_staff = regions_without_staff
         self.regions_with_staff = regions_with_staff
+        self.segmentation_offsets = end_points
