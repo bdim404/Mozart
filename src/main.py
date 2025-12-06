@@ -46,6 +46,22 @@ label_map = {
 }
 
 
+def convert_to_jianpu(pitch):
+    pitch_map = {
+        'c': '1',
+        'd': '2',
+        'e': '3',
+        'f': '4',
+        'g': '5',
+        'a': '6',
+        'b': '7'
+    }
+    if len(pitch) >= 1:
+        note = pitch[0].lower()
+        return pitch_map.get(note, pitch)
+    return pitch
+
+
 def estim(c, idx, imgs_spacing, imgs_rows):
     spacing = imgs_spacing[idx]
     rows = imgs_rows[idx]
@@ -281,7 +297,8 @@ def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_
             cv2.rectangle(img_rgb, (global_minc, global_minr),
                          (global_maxc, global_maxr), (255, 0, 0), 2)
 
-            pitch_text = ','.join(pitch_labels) if len(pitch_labels) > 1 else pitch_labels[0]
+            jianpu_labels = [convert_to_jianpu(p) for p in pitch_labels]
+            pitch_text = ','.join(jianpu_labels) if len(jianpu_labels) > 1 else jianpu_labels[0]
             cv2.putText(img_rgb, pitch_text, (global_minc, max(global_minr - 5, 10)),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
