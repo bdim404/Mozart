@@ -300,7 +300,7 @@ def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_
             jianpu_labels = [convert_to_jianpu(p) for p in pitch_labels]
             pitch_text = ','.join(jianpu_labels) if len(jianpu_labels) > 1 else jianpu_labels[0]
             cv2.putText(img_rgb, pitch_text, (global_minc, max(global_minr - 5, 10)),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
 
     return img_rgb
 
