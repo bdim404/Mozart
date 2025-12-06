@@ -203,6 +203,10 @@ def recognize(out_file, most_common, coord_imgs, imgs_with_staff, imgs_spacing, 
 
 
 def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_with_staff, imgs_spacing, imgs_rows):
+    note_types = ['4', '8', '8_b_n', '8_b_r', '16', '16_b_n', '16_b_r',
+                  '32', '32_b_n', '32_b_r', 'a_4', 'a_8', 'a_16', 'a_32',
+                  '2', 'a_2', '1', 'a_1', 'chord']
+
     disk_size = most_common / 4
 
     if original_img.ndim == 2:
@@ -230,6 +234,9 @@ def visualize(original_img, segmentation_offsets, most_common, coord_imgs, imgs_
             saved_img = (255 * (1 - prim)).astype(np.uint8)
             labels = predict(saved_img)
             label = labels[0]
+
+            if label not in note_types:
+                continue
 
             minr, minc, maxr, maxc = boundary[j]
 
