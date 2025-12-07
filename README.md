@@ -1,108 +1,94 @@
-<p align="center">
-  <a href="" rel="noopener">
- <img width=400px height=210px src="https://github.com/aashrafh/mozart/blob/main/logo.svg" alt="Mozart logo"></a>
-</p>
+# Music Score Recognition API
 
-<p align="center"> :notes: Convert sheet music to a machine-readable version.
-    <br> 
-</p>
+基于 FastAPI 的乐谱识别服务，可以将五线谱图片转换为简谱标注。
 
-<p align="center">
-  <a href="https://github.com/aashrafh/mozart/graphs/contributors" alt="Contributors">
-        <img src="https://img.shields.io/github/contributors/aashrafh/mozart" /></a>
-  
-   <a href="https://github.com/aashrafh/mozart/issues" alt="Issues">
-        <img src="https://img.shields.io/github/issues/aashrafh/mozart" /></a>
-  
-  <a href="https://github.com/aashrafh/mozart/network" alt="Forks">
-        <img src="https://img.shields.io/github/forks/aashrafh/mozart" /></a>
-        
-  <a href="https://github.com/aashrafh/mozart/stargazers" alt="Stars">
-        <img src="https://img.shields.io/github/stars/aashrafh/mozart" /></a>
-        
-  <a href="https://github.com/aashrafh/mozart/blob/master/LICENSE" alt="License">
-        <img src="https://img.shields.io/github/license/aashrafh/mozart" /></a>
-</p>
+## 环境要求
 
+- Python 3.7+
+- Conda
 
----
+## 安装步骤
 
-## 📝 Table of Contents
-- [About](#about)
-- [Methodology](#methodology)
-- [Install](#Install)
-- [Technology](#tech)
+### 1. 创建 Conda 环境
 
-## 🧐 About <a name = "about"></a>
-The aim of this project is to develop a sheet music reader. This is called Optical Music Recognition (OMR). Its objective is to convert sheet music to a machine-readable version. We take a simplified version where we convert an image of sheet music to a textual representation that can be further processed to produce midi files or audio files like wav or mp3. 
-<p align="center">
-  <a href="" rel="noopener">
- <img src="https://github.com/aashrafh/Mozart/blob/main/about.png" alt="About"></a>
-</p>
+```bash
+conda create -n omr_api python=3.8
+conda activate omr_api
+```
 
-## :computer: Methodology <a name = "methodology"></a>
+### 2. 安装依赖
 
-### 1. Noise Filtering and Binarization
-<p align="center">
-  <a href="" rel="noopener">
- <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_binary.png" alt="Binary Image"></a>
-</p>
+```bash
+pip install fastapi uvicorn python-multipart pillow opencv-python scikit-image scipy numpy
+```
 
-### 2. Segmentation
+如果项目有 requirements.txt：
+```bash
+pip install -r requirements.txt
+```
 
-<p align="center">
-  <a href="" rel="noopener">
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_seg_0.png" alt="Segment 1"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_seg_1.png" alt="Segment 2"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_seg_2.png" alt="Segment 3"></a>
-</p>
+## 启动服务
 
+```bash
+conda activate omr_api
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
+```
 
-### 3. Staff Line Detection and Removal
+服务启动后访问：
+- API 地址: http://localhost:8000
+- API 文档: http://localhost:8000/docs
 
-<p align="center">
-  <a href="" rel="noopener">
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_without_staff_0.png" alt="No Staff Image 1"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_without_staff_1.png" alt="No Staff Image 2"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_without_staff_2.png" alt="No Staff Image 3"></a>
-</p>
+## API 使用
 
-### 4. Construct The New Staff Lines
+### POST /process
 
-<p align="center">
-  <a href="" rel="noopener">
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_with_new_staff_0.png" alt="New Staff Image 1"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_with_new_staff_1.png" alt="New Staff Image 2"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_with_new_staff_2.png" alt="New Staff Image 3"></a>
-</p>
+上传乐谱图片，返回标注后的图片。
 
+**请求示例：**
 
-### 5. Symbol Detection and Recognition
+```bash
+curl -X POST "http://localhost:8000/process" \
+  -F "file=@testcases/01.PNG" \
+  --output result.png
+```
 
-<p align="center">
-  <a href="" rel="noopener">
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_detected_0.png" alt="Result 1"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_detected_1.png" alt="Result 2"></a><br> <br> 
-  <img src="https://github.com/aashrafh/Mozart/blob/main/output/imgs/02/02_detected_2.png" alt="Result 3"></a>
-</p>
+**Python 示例：**
 
+```python
+import requests
 
-## 🏁 Install <a name = "Install"></a>
-1. You can use the attached notebook for quick testing and visualization.
-2. You can setup an environment on your local machine to run the project:
-    1. Install [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/)
-    2. ```conda env create -f requirements.yml```
-    3. ```conda activate mozart```
-    4. ```python3 main.py <input directory path> <output directory path>```
+with open('testcases/01.PNG', 'rb') as f:
+    files = {'file': f}
+    response = requests.post('http://localhost:8000/process', files=files)
 
-> You can find the dataset on [Google Drive](https://drive.google.com/drive/u/0/folders/1OVGA3CGnEKjyg_k_L8MP2RO5R3oDIbHE).
+with open('result.png', 'wb') as f:
+    f.write(response.content)
+```
 
-> Please check the following [issue](https://github.com/aashrafh/Mozart/issues/8) for another ```requirements.yml``` file. 
+**响应：**
+- Content-Type: image/png
+- 返回标注了简谱（1-7）的图片
 
+### GET /
 
-## ⛏️ Built Using <a name = "tech"></a>
-- [Python 3.8.3](https://www.python.org/)
-- [NumPy](https://numpy.org/doc/stable/index.html)
-- [OpenCV](https://opencv.org/)
-- [scikit-learn](https://scikit-learn.org/stable/)
-- [scikit-image](https://scikit-image.org/)
+健康检查端点。
+
+```bash
+curl http://localhost:8000/
+```
+
+**响应：**
+```json
+{"message": "Music Score Recognition API"}
+```
+
+## 项目结构
+
+```
+.
+├── api.py              # FastAPI 服务主文件
+├── src/
+│   ├── main.py         # 核心识别逻辑
+│   └── ...
+└── testcases/          # 测试用例图片
+```
